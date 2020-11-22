@@ -1,15 +1,15 @@
 defmodule Sternhalma.Hex do
-  @moduledoc """
+  alias __MODULE__
+
+  defstruct x: 0, z: 0, y: 0
+
+  @typedoc """
   Represents x z y.
 
   The coordinates x, z, and y must add to 0 in some way.
 
   See https://www.redblobgames.com/grids/hexagons/#coordinates-cube for more info.
   """
-
-  alias __MODULE__
-
-  defstruct x: 0, z: 0, y: 0
   @type t :: %Hex{x: number(), z: number(), y: number()}
 
   @type direction ::
@@ -36,7 +36,7 @@ defmodule Sternhalma.Hex do
 
   ## Examples
 
-      iex> Sternhalma.Hex.neighbor(Sternhalma.Hex.new({1, -4, 3}), :top_left)
+      iex> neighbor(Sternhalma.Hex.new({1, -4, 3}), :top_left)
       %Sternhalma.Hex{x: 1, y: 4, z: -5}
 
 
@@ -54,7 +54,7 @@ defmodule Sternhalma.Hex do
 
   ## Examples
 
-      iex> Sternhalma.Hex.neighbors(Sternhalma.Hex.new({1, -4, 3}))
+      iex> neighbors(Sternhalma.Hex.new({1, -4, 3}))
       [
         %Sternhalma.Hex{x: 1, y: 4, z: -5},
         %Sternhalma.Hex{x: 2, y: 3, z: -5},
@@ -77,7 +77,7 @@ defmodule Sternhalma.Hex do
 
   ## Examples
 
-      iex> Sternhalma.Hex.to_pixel(Sternhalma.Hex.new({1, -4, 3}))
+      iex> to_pixel(Sternhalma.Hex.new({1, -4, 3}))
       {8.267949192431123, 4.0}
 
 
@@ -98,7 +98,7 @@ defmodule Sternhalma.Hex do
 
   ## Examples
 
-      iex> Sternhalma.Hex.from_pixel({8.267949192431123, 4.0})
+      iex> from_pixel({8.267949192431123, 4.0})
       %Sternhalma.Hex{x: 1, y: 3, z: -4}
 
 

@@ -1,11 +1,22 @@
 defmodule Sternhalma.Board do
+  @moduledoc """
+  Provides functions to manipulate the Chinese Checkers game board.
+  """
+
   alias Sternhalma.{Hex, Cell}
 
+  @type t :: list(Cell.t())
+
+  @doc """
+  Generate an empty board.
+  """
+  @spec new() :: list(Cell.t())
   def new() do
     six_point_star()
     |> Enum.map(&%Cell{position: &1})
   end
 
+  @spec six_point_star() :: list(Hex.t())
   defp six_point_star() do
     # left -> right, bottom -> top
     [
@@ -30,6 +41,7 @@ defmodule Sternhalma.Board do
     |> List.flatten()
   end
 
+  @spec make_row({number(), number(), number()}, number()) :: list(Hex.t())
   defp make_row({x, z, y}, length) do
     [
       Enum.to_list(x..(length + x - 1)),
@@ -40,20 +52,49 @@ defmodule Sternhalma.Board do
     |> Enum.map(&Hex.new(&1))
   end
 
-  def path(board, start, finish) do
-    paths =
-      path_exists_helper(
-        board,
-        start,
-        finish,
-        %{start => :done},
-        [start]
-      )
+  @doc """
+  Return a list of cells from start to finish.
+  Returns an empty list if there is no path.
+  """
+  @spec path(t(), Cell.t(), Cell.t()) :: list(Cell.t())
+  def path(_board, start, finish) when start.position == finish.position or start.marble == nil,
+    do: []
 
-    IO.inspect(paths)
-    backtrack(paths, finish, [])
+  def path(board, start, finish) do
+    neighbors = Hex.neighbors(start.position)
+
+    simple_path_exists? =
+      finish.marble == nil and Enum.find(neighbors, fn hex -> hex == finish.position end)
+
+    if simple_path_exists? do
+      [start, finish]
+    else
+      paths =
+        path_helper(
+          board,
+          true,
+          start,
+          finish,
+          %{start => :done},
+          [start]
+        )
+
+      backtrack(paths, finish, [])
+    end
   end
 
+  @type next_location :: nil | :done | Cell.t()
+
+  @typedoc """
+  Represents the chain of steps needed to create a path of cells.
+  The keys are always cells and the values can be:
+    - A cell when there is another location to move to
+    - :done when the desired location is reached
+    - nil when the location is invalid
+  """
+  @type path_guide :: %{Cell.t() => next_location()}
+
+  @spec backtrack(path_guide(), next_location(), list(Cell.t())) :: list(Cell.t())
   defp backtrack(_paths, nil, _path), do: []
   defp backtrack(_paths, :done, path), do: path
 
@@ -62,47 +103,53 @@ defmodule Sternhalma.Board do
     backtrack(paths, current, [finish | path])
   end
 
-  defp path_exists_helper(_board, _start, _finish, came_from, []), do: came_from
+  @type marble_expected :: boolean()
 
-  defp path_exists_helper(_board, _start, finish, came_from, [current | _cells])
+  @spec path_helper(t(), marble_expected(), Cell.t(), Cell.t(), path_guide(), list(Cell.t())) ::
+          path_guide()
+  defp path_helper(_board, _marble_expected, _start, _finish, came_from, []), do: came_from
+
+  defp path_helper(_board, _marble_expected, _start, finish, came_from, [current | _cells])
        when finish.position == current.position do
     came_from
   end
 
-  defp path_exists_helper(board, start, finish, came_from, [current | cells]) do
-    nexts =
+  defp path_helper(board, marble_expected, start, finish, came_from, [current | cells]) do
+    cells_to_visit =
       Hex.neighbors(current.position)
-      |> filter_invalid_cells(board)
+      |> remove_invalid_cells(board)
       |> Enum.map(fn hex ->
-        Enum.find(board, fn cell ->
-          cell.position == hex
-        end)
+        Enum.find(board, &(&1.position == hex))
       end)
-      |> filter_visited_cells(came_from)
-      |> filter_occupied_cells()
+      |> Enum.filter(fn cell ->
+        if marble_expected do
+          cell.marble != nil
+        else
+          cell.marble == nil
+        end
+      end)
+      |> remove_visited_cells(came_from)
 
     came_from =
-      nexts
+      cells_to_visit
       |> Enum.reduce(came_from, fn next, acc ->
         Map.put(acc, next, current)
       end)
 
-    path_exists_helper(board, start, finish, came_from, cells ++ nexts)
+    path_helper(board, !marble_expected, start, finish, came_from, cells_to_visit ++ cells)
   end
 
-  defp filter_invalid_cells(neighbors, board) do
+  @spec remove_invalid_cells(list(Hex.t()), t()) :: list(Hex.t())
+  defp remove_invalid_cells(neighbors, board) do
     neighbors
     |> Enum.filter(fn neighbor ->
       Enum.any?(board, fn cell -> neighbor == cell.position end)
     end)
   end
 
-  defp filter_visited_cells(cells, came_from) do
+  @spec remove_visited_cells(list(Cell.t()), path_guide()) :: list(Cell.t())
+  defp remove_visited_cells(cells, came_from) do
     cells
     |> Enum.reject(fn cell -> Map.get(came_from, cell) end)
-  end
-
-  defp filter_occupied_cells(cells) do
-    Enum.filter(cells, &(&1.marble == nil))
   end
 end
