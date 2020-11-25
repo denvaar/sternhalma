@@ -64,7 +64,8 @@ defmodule Sternhalma.Board do
     neighbors = Hex.neighbors(start.position)
 
     simple_path_exists? =
-      finish.marble == nil and Enum.find(neighbors, fn hex -> hex == finish.position end)
+      finish.marble == nil and
+        Enum.find(neighbors, fn {_direction, hex} -> hex == finish.position end)
 
     if simple_path_exists? do
       [start, finish]
@@ -72,7 +73,7 @@ defmodule Sternhalma.Board do
       paths =
         path_helper(
           board,
-          true,
+          nil,
           start,
           finish,
           %{start => :done},
@@ -103,26 +104,30 @@ defmodule Sternhalma.Board do
     backtrack(paths, current, [finish | path])
   end
 
-  @type marble_expected :: boolean()
+  @type jump_direction :: Hex.direction() | nil
 
-  @spec path_helper(t(), marble_expected(), Cell.t(), Cell.t(), path_guide(), list(Cell.t())) ::
+  @spec path_helper(t(), jump_direction(), Cell.t(), Cell.t(), path_guide(), list(Cell.t())) ::
           path_guide()
-  defp path_helper(_board, _marble_expected, _start, _finish, came_from, []), do: came_from
+  defp path_helper(_board, _jump_direction, _start, _finish, came_from, []), do: came_from
 
-  defp path_helper(_board, _marble_expected, _start, finish, came_from, [current | _cells])
+  defp path_helper(_board, _jump_direction, _start, finish, came_from, [current | _cells])
        when finish.position == current.position do
     came_from
   end
 
-  defp path_helper(board, marble_expected, start, finish, came_from, [current | cells]) do
+  defp path_helper(board, jump_direction, start, finish, came_from, [current | cells]) do
     cells_to_visit =
-      Hex.neighbors(current.position)
+      if jump_direction == nil do
+        Hex.neighbors(current.position)
+      else
+        [{nil, Hex.neighbor(current.position, jump_direction)}]
+      end
       |> remove_invalid_cells(board)
-      |> Enum.map(fn hex ->
-        Enum.find(board, &(&1.position == hex))
+      |> Enum.map(fn {direction, hex} ->
+        {direction, Enum.find(board, &(&1.position == hex))}
       end)
-      |> Enum.filter(fn cell ->
-        if marble_expected do
+      |> Enum.filter(fn {_direction, cell} ->
+        if jump_direction == nil do
           cell.marble != nil
         else
           cell.marble == nil
@@ -132,24 +137,33 @@ defmodule Sternhalma.Board do
 
     came_from =
       cells_to_visit
-      |> Enum.reduce(came_from, fn next, acc ->
+      |> Enum.reduce(came_from, fn {_direction, next}, acc ->
         Map.put(acc, next, current)
       end)
 
-    path_helper(board, !marble_expected, start, finish, came_from, cells_to_visit ++ cells)
+    [{jump_direction, _cell} | _] =
+      if length(cells_to_visit) > 0, do: cells_to_visit, else: [{nil, nil}]
+
+    next_cells =
+      cells_to_visit
+      |> Enum.map(fn {_direction, cell} -> cell end)
+      |> Kernel.++(cells)
+
+    path_helper(board, jump_direction, start, finish, came_from, next_cells)
   end
 
-  @spec remove_invalid_cells(list(Hex.t()), t()) :: list(Hex.t())
+  @spec remove_invalid_cells(list({Hex.direction(), Hex.t()}), t()) ::
+          list({Hex.direction(), Hex.t()})
   defp remove_invalid_cells(neighbors, board) do
     neighbors
-    |> Enum.filter(fn neighbor ->
+    |> Enum.filter(fn {_direction, neighbor} ->
       Enum.any?(board, fn cell -> neighbor == cell.position end)
     end)
   end
 
-  @spec remove_visited_cells(list(Cell.t()), path_guide()) :: list(Cell.t())
+  @spec remove_visited_cells(list({Hex.direction(), Cell.t()}), path_guide()) :: list(Cell.t())
   defp remove_visited_cells(cells, came_from) do
     cells
-    |> Enum.reject(fn cell -> Map.get(came_from, cell) end)
+    |> Enum.reject(fn {_direction, cell} -> Map.get(came_from, cell) end)
   end
 end

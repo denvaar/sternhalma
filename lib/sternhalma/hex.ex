@@ -36,8 +36,8 @@ defmodule Sternhalma.Hex do
 
   ## Examples
 
-      iex> neighbor(Sternhalma.Hex.new({1, -4, 3}), :top_left)
-      %Sternhalma.Hex{x: 1, y: 4, z: -5}
+      iex> neighbor(Sternhalma.Hex.new({1, -4, 3}), :bottom_left)
+      %Sternhalma.Hex{x: 0, y: 3, z: -3}
 
 
   """
@@ -56,20 +56,20 @@ defmodule Sternhalma.Hex do
 
       iex> neighbors(Sternhalma.Hex.new({1, -4, 3}))
       [
-        %Sternhalma.Hex{x: 1, y: 4, z: -5},
-        %Sternhalma.Hex{x: 2, y: 3, z: -5},
-        %Sternhalma.Hex{x: 0, y: 4, z: -4},
-        %Sternhalma.Hex{x: 2, y: 2, z: -4},
-        %Sternhalma.Hex{x: 0, y: 3, z: -3},
-        %Sternhalma.Hex{x: 1, y: 2, z: -3}
+        top_left: %Sternhalma.Hex{x: 1, y: 4, z: -5},
+        top_right: %Sternhalma.Hex{x: 2, y: 3, z: -5},
+        left: %Sternhalma.Hex{x: 0, y: 4, z: -4},
+        right: %Sternhalma.Hex{x: 2, y: 2, z: -4},
+        bottom_left: %Sternhalma.Hex{x: 0, y: 3, z: -3},
+        bottom_right: %Sternhalma.Hex{x: 1, y: 2, z: -3}
       ]
 
 
   """
-  @spec neighbors(t()) :: list(t())
+  @spec neighbors(t()) :: list({direction(), t()})
   def neighbors(hex) do
     [:top_left, :top_right, :left, :right, :bottom_left, :bottom_right]
-    |> Enum.map(fn direction -> neighbor(hex, direction) end)
+    |> Enum.map(fn direction -> {direction, neighbor(hex, direction)} end)
   end
 
   @doc """
