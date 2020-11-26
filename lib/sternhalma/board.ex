@@ -116,30 +116,38 @@ defmodule Sternhalma.Board do
   end
 
   defp jump_move(board, jump_direction, start, finish, came_from, [current | cells]) do
-    cells_to_visit =
+    neighboring_cells =
       current
-      |> neighborz(jump_direction)
+      |> neighbors(jump_direction)
       |> remove_invalid_cells(board)
       |> convert_hex_positions_to_cells(board)
       |> filter_occupied_cells(jump_direction)
       |> remove_visited_cells(came_from)
 
-    came_from =
-      cells_to_visit
-      |> Enum.reduce(came_from, fn {_direction, next}, acc ->
-        Map.put(acc, next, current)
-      end)
-
-    [{jump_direction, _cell} | _] =
-      if length(cells_to_visit) > 0, do: cells_to_visit, else: [{nil, nil}]
+    jump_direction = get_next_jump_direction(neighboring_cells)
 
     next_cells =
-      cells_to_visit
+      neighboring_cells
       |> Enum.map(fn {_direction, cell} -> cell end)
       |> Kernel.++(cells)
 
+    came_from = update_came_from(came_from, current, next_cells)
+
     jump_move(board, jump_direction, start, finish, came_from, next_cells)
   end
+
+  @spec update_came_from(path_guide(), Cell.t(), list(Cell.t())) :: path_guide()
+  defp update_came_from(came_from, current, next_cells) do
+    with [next_neighbor | _] <- next_cells do
+      Map.put(came_from, next_neighbor, current)
+    else
+      _ -> came_from
+    end
+  end
+
+  @spec get_next_jump_direction(list({jump_direction(), Cell.t()})) :: jump_direction()
+  defp get_next_jump_direction([]), do: nil
+  defp get_next_jump_direction([{jump_direction, _cell} | _]), do: jump_direction
 
   @spec convert_hex_positions_to_cells(list({jump_direction(), Hex.t()}), t()) ::
           list({jump_direction(), Cell.t()})
@@ -155,9 +163,9 @@ defmodule Sternhalma.Board do
     end)
   end
 
-  @spec neighborz(Cell.t(), jump_direction()) :: list({jump_direction(), Hex.t()})
-  defp neighborz(cell, nil), do: Hex.neighbors(cell.position)
-  defp neighborz(cell, jump_direction), do: [{nil, Hex.neighbor(cell.position, jump_direction)}]
+  @spec neighbors(Cell.t(), jump_direction()) :: list({jump_direction(), Hex.t()})
+  defp neighbors(cell, nil), do: Hex.neighbors(cell.position)
+  defp neighbors(cell, jump_direction), do: [{nil, Hex.neighbor(cell.position, jump_direction)}]
 
   @spec remove_invalid_cells(list({jump_direction(), Hex.t()}), t()) ::
           list({jump_direction(), Hex.t()})
