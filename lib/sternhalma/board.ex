@@ -63,15 +63,15 @@ defmodule Sternhalma.Board do
   def path(board, start, finish) do
     neighbors = Hex.neighbors(start.position)
 
-    simple_path_exists? =
+    non_jump_possible? =
       finish.marble == nil and
         Enum.find(neighbors, fn {_direction, hex} -> hex == finish.position end)
 
-    if simple_path_exists? do
+    if non_jump_possible? do
       [start, finish]
     else
       paths =
-        path_helper(
+        jump_move(
           board,
           nil,
           start,
@@ -104,35 +104,24 @@ defmodule Sternhalma.Board do
     backtrack(paths, current, [finish | path])
   end
 
-  @type jump_direction :: Hex.direction() | nil
+  @type jump_direction :: nil | Hex.direction()
 
-  @spec path_helper(t(), jump_direction(), Cell.t(), Cell.t(), path_guide(), list(Cell.t())) ::
+  @spec jump_move(t(), jump_direction(), Cell.t(), Cell.t(), path_guide(), list(Cell.t())) ::
           path_guide()
-  defp path_helper(_board, _jump_direction, _start, _finish, came_from, []), do: came_from
+  defp jump_move(_board, _jump_direction, _start, _finish, came_from, []), do: came_from
 
-  defp path_helper(_board, _jump_direction, _start, finish, came_from, [current | _cells])
+  defp jump_move(_board, _jump_direction, _start, finish, came_from, [current | _cells])
        when finish.position == current.position do
     came_from
   end
 
-  defp path_helper(board, jump_direction, start, finish, came_from, [current | cells]) do
+  defp jump_move(board, jump_direction, start, finish, came_from, [current | cells]) do
     cells_to_visit =
-      if jump_direction == nil do
-        Hex.neighbors(current.position)
-      else
-        [{nil, Hex.neighbor(current.position, jump_direction)}]
-      end
+      current
+      |> neighborz(jump_direction)
       |> remove_invalid_cells(board)
-      |> Enum.map(fn {direction, hex} ->
-        {direction, Enum.find(board, &(&1.position == hex))}
-      end)
-      |> Enum.filter(fn {_direction, cell} ->
-        if jump_direction == nil do
-          cell.marble != nil
-        else
-          cell.marble == nil
-        end
-      end)
+      |> convert_hex_positions_to_cells(board)
+      |> filter_occupied_cells(jump_direction)
       |> remove_visited_cells(came_from)
 
     came_from =
@@ -149,11 +138,29 @@ defmodule Sternhalma.Board do
       |> Enum.map(fn {_direction, cell} -> cell end)
       |> Kernel.++(cells)
 
-    path_helper(board, jump_direction, start, finish, came_from, next_cells)
+    jump_move(board, jump_direction, start, finish, came_from, next_cells)
   end
 
-  @spec remove_invalid_cells(list({Hex.direction(), Hex.t()}), t()) ::
-          list({Hex.direction(), Hex.t()})
+  @spec convert_hex_positions_to_cells(list({jump_direction(), Hex.t()}), t()) ::
+          list({jump_direction(), Cell.t()})
+  defp convert_hex_positions_to_cells(neighbors, board) do
+    Enum.reduce(neighbors, [], fn {direction, position}, acc ->
+      cell = Enum.find(board, &(&1.position == position))
+
+      if cell do
+        [{direction, cell} | acc]
+      else
+        acc
+      end
+    end)
+  end
+
+  @spec neighborz(Cell.t(), jump_direction()) :: list({jump_direction(), Hex.t()})
+  defp neighborz(cell, nil), do: Hex.neighbors(cell.position)
+  defp neighborz(cell, jump_direction), do: [{nil, Hex.neighbor(cell.position, jump_direction)}]
+
+  @spec remove_invalid_cells(list({jump_direction(), Hex.t()}), t()) ::
+          list({jump_direction(), Hex.t()})
   defp remove_invalid_cells(neighbors, board) do
     neighbors
     |> Enum.filter(fn {_direction, neighbor} ->
@@ -161,9 +168,24 @@ defmodule Sternhalma.Board do
     end)
   end
 
-  @spec remove_visited_cells(list({Hex.direction(), Cell.t()}), path_guide()) :: list(Cell.t())
+  @spec remove_visited_cells(list({jump_direction(), Cell.t()}), path_guide()) ::
+          list({jump_direction(), Cell.t()})
   defp remove_visited_cells(cells, came_from) do
     cells
     |> Enum.reject(fn {_direction, cell} -> Map.get(came_from, cell) end)
+  end
+
+  @spec filter_occupied_cells(list({jump_direction(), Cell.t()}), jump_direction()) ::
+          list({jump_direction(), Cell.t()})
+  defp filter_occupied_cells(cells, nil) do
+    Enum.reject(cells, fn {_direction, cell} ->
+      cell.marble == nil
+    end)
+  end
+
+  defp filter_occupied_cells(cells, _jump_direction) do
+    Enum.filter(cells, fn {_direction, cell} ->
+      cell.marble == nil
+    end)
   end
 end
