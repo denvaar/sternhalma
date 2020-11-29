@@ -10,15 +10,15 @@ defmodule Sternhalma.Cell do
   """
   @type t :: %Cell{position: Hex.t(), marble: marble()}
 
-  @type marble :: nil | char()
+  @type marble :: nil | String.t()
 
   @doc """
   Puts a marble in the given cell.
 
   ## Examples
 
-      iex> set_marble(%Sternhalma.Cell{position: Sternhalma.Hex.new({0,0,0})}, 'a')
-      %Sternhalma.Cell{marble: 'a', position: %Sternhalma.Hex{x: 0, y: 0, z: 0}}
+      iex> set_marble(%Sternhalma.Cell{position: Sternhalma.Hex.new({0,0,0})}, "a")
+      %Sternhalma.Cell{marble: "a", position: %Sternhalma.Hex{x: 0, y: 0, z: 0}}
 
 
   """

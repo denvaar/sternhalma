@@ -27,7 +27,7 @@ defmodule Sternhalma.Board do
   @doc """
   Fill in a home triangle with marbles.
   """
-  @spec setup_triangle(t(), home_triangle(), char()) :: t()
+  @spec setup_triangle(t(), home_triangle(), String.t()) :: t()
   def setup_triangle(board, :bottom, marble) do
     positions = [
       %Hex{x: 3, y: 3, z: -6},
@@ -155,7 +155,7 @@ defmodule Sternhalma.Board do
     end
   end
 
-  @spec setup_triangle_helper(t(), list(Hex.t()), char()) :: t()
+  @spec setup_triangle_helper(t(), list(Hex.t()), String.t()) :: t()
   defp setup_triangle_helper(board, target_positions, marble) do
     board
     |> Enum.map(fn cell ->
