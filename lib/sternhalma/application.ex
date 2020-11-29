@@ -9,6 +9,7 @@ defmodule Sternhalma.Application do
     children = [
       # Starts a worker by calling: Sternhalma.Worker.start_link(arg)
       # {Sternhalma.Worker, arg}
+      {Registry, keys: :unique, name: :sternhalma_registry}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
