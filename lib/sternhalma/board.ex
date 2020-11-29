@@ -145,7 +145,7 @@ defmodule Sternhalma.Board do
 
 
   """
-  @spec get_board_cell(t(), {number(), number()}) :: Cell.t() | nil
+  @spec get_board_cell(t(), {number(), number()}) :: {:ok | :error, Cell.t() | nil}
   def get_board_cell(board, pixel_coord) do
     case Enum.find(board, fn cell ->
            cell.position == Hex.from_pixel(pixel_coord)

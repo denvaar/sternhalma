@@ -12,28 +12,30 @@ defmodule Sternhalma do
           game_id: binary(),
           board: Board.t(),
           turn: nil | char(),
+          last_move: list(Cell.t()),
           status: game_status(),
           players: list(char())
         }
 
   def start_link(game_id) do
-    GenServer.start_link(__MODULE__, game_id, name: game_id)
+    name = via_tuple(game_id)
+    GenServer.start_link(__MODULE__, game_id, name: name)
   end
 
   def add_player(game_id, player_name) do
-    GenServer.call(game_id, {:add_player, player_name})
+    GenServer.call(via_tuple(game_id), {:add_player, player_name})
   end
 
   def play_game(game_id) do
-    GenServer.call(game_id, {:set_status, :playing})
+    GenServer.call(via_tuple(game_id), {:set_status, :playing})
   end
 
   def end_game(game_id) do
-    GenServer.call(game_id, {:set_status, :over})
+    GenServer.call(via_tuple(game_id), {:set_status, :over})
   end
 
   def move_marble(game_id, start_position, end_position) do
-    GenServer.call(game_id, {:find_path, start_position, end_position})
+    GenServer.call(via_tuple(game_id), {:find_path, start_position, end_position})
   end
 
   #
@@ -47,6 +49,7 @@ defmodule Sternhalma do
       board: Board.empty(),
       status: :setup,
       turn: nil,
+      last_move: [],
       players: []
     }
 
@@ -72,13 +75,42 @@ defmodule Sternhalma do
   end
 
   def handle_call({:find_path, start_position, end_position}, _from, state) do
-    with {:ok, start_cell} <- Board.get_board_cell(start_position),
-         {:ok, end_cell} <- Board.get_board_cell(end_position) do
-      {result, path} = find_path(state.board, start_position, end_position)
-      # TODO: update position
-      {:reply, {result, path}, state}
+    %{turn: turn} = state
+
+    # TODO refactor this function
+    with(
+      {:ok, %Cell{marble: ^turn} = start_cell} <-
+        Board.get_board_cell(state.board, start_position),
+      {:ok, end_cell} <- Board.get_board_cell(state.board, end_position)
+    ) do
+      {result, path} = find_path(state.board, start_cell, end_cell)
+
+      board =
+        state.board
+        |> Enum.map(fn board_cell ->
+          cond do
+            board_cell.position == start_cell.position ->
+              Cell.set_marble(board_cell, nil)
+
+            board_cell.position == end_cell.position ->
+              Cell.set_marble(board_cell, state.turn)
+
+            true ->
+              board_cell
+          end
+        end)
+
+      new_state = %{
+        state
+        | board: board,
+          last_move: path,
+          turn: next_turn(state.players, state.turn)
+      }
+
+      {:reply, {result, new_state}, new_state}
     else
-      {:reply, {:error, []}, state}
+      _ ->
+        {:reply, {:error, "invalid start or end position"}, state}
     end
   end
 
@@ -91,9 +123,11 @@ defmodule Sternhalma do
     {:reply, {result, new_state}, new_state}
   end
 
+  # TODO consider moving these private functions to some other module
+
   @spec change_game_status(game_state(), game_status()) :: {:ok | :error, game_state()}
   defp change_game_status(game_state, :playing)
-       when game_state.players > 1 and game_state.status == :setup,
+       when length(game_state.players) > 1 and game_state.status == :setup,
        do: {:ok, %{game_state | status: :playing}}
 
   defp change_game_status(game_state, :over) when game_state.status == :playing,
@@ -107,6 +141,7 @@ defmodule Sternhalma do
     {:ok, %{game_state | turn: List.first(game_state.players)}}
   end
 
+  defp perform_side_effects({:ok, game_state}, _), do: {:ok, game_state}
   defp perform_side_effects({:error, game_state}, _), do: {:error, game_state}
 
   @spec position_opponent(0..5) :: Board.home_triangle()
@@ -126,4 +161,22 @@ defmodule Sternhalma do
   @spec pathfinding_status(list(Cell.t())) :: :ok | :error
   defp pathfinding_status([]), do: :error
   defp pathfinding_status(_path), do: :ok
+
+  @spec next_turn(list(char()), char()) :: char()
+  defp next_turn(players, turn) do
+    next_player_index =
+      case Enum.find_index(players, &(&1 == turn)) do
+        nil ->
+          0
+
+        current_player_index ->
+          rem(current_player_index + 1, length(players))
+      end
+
+    Enum.at(players, next_player_index)
+  end
+
+  defp via_tuple(game_id) do
+    {:via, Registry, {:sternhalma_registry, game_id}}
+  end
 end
