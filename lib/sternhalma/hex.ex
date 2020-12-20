@@ -36,18 +36,18 @@ defmodule Sternhalma.Hex do
 
   ## Examples
 
-      iex> neighbor(Sternhalma.Hex.new({1, -4, 3}), :bottom_left)
+      iex> neighbor(Sternhalma.Hex.new({1, -4, 3}), :top_left)
       %Sternhalma.Hex{x: 0, y: 3, z: -3}
 
 
   """
   @spec neighbor(t(), direction()) :: t()
-  def neighbor(hex, :top_left), do: %Hex{x: hex.x, z: hex.z - 1, y: hex.y + 1}
-  def neighbor(hex, :top_right), do: %Hex{x: hex.x + 1, z: hex.z - 1, y: hex.y}
+  def neighbor(hex, :bottom_left), do: %Hex{x: hex.x, z: hex.z - 1, y: hex.y + 1}
+  def neighbor(hex, :bottom_right), do: %Hex{x: hex.x + 1, z: hex.z - 1, y: hex.y}
   def neighbor(hex, :left), do: %Hex{x: hex.x - 1, z: hex.z, y: hex.y + 1}
   def neighbor(hex, :right), do: %Hex{x: hex.x + 1, z: hex.z, y: hex.y - 1}
-  def neighbor(hex, :bottom_left), do: %Hex{x: hex.x - 1, z: hex.z + 1, y: hex.y}
-  def neighbor(hex, :bottom_right), do: %Hex{x: hex.x, z: hex.z + 1, y: hex.y - 1}
+  def neighbor(hex, :top_left), do: %Hex{x: hex.x - 1, z: hex.z + 1, y: hex.y}
+  def neighbor(hex, :top_right), do: %Hex{x: hex.x, z: hex.z + 1, y: hex.y - 1}
 
   @doc """
   Return the surrounding Hex coordinates.
@@ -56,14 +56,13 @@ defmodule Sternhalma.Hex do
 
       iex> neighbors(Sternhalma.Hex.new({1, -4, 3}))
       [
-        top_left: %Sternhalma.Hex{x: 1, y: 4, z: -5},
-        top_right: %Sternhalma.Hex{x: 2, y: 3, z: -5},
+        top_left: %Sternhalma.Hex{x: 0, y: 3, z: -3},
+        top_right: %Sternhalma.Hex{x: 1, y: 2, z: -3},
         left: %Sternhalma.Hex{x: 0, y: 4, z: -4},
         right: %Sternhalma.Hex{x: 2, y: 2, z: -4},
-        bottom_left: %Sternhalma.Hex{x: 0, y: 3, z: -3},
-        bottom_right: %Sternhalma.Hex{x: 1, y: 2, z: -3}
+        bottom_left: %Sternhalma.Hex{x: 1, y: 4, z: -5},
+        bottom_right: %Sternhalma.Hex{x: 2, y: 3, z: -5}
       ]
-
 
   """
   @spec neighbors(t()) :: list({direction(), t()})
