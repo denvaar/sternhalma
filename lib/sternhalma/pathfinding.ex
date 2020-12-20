@@ -29,11 +29,10 @@ defmodule Sternhalma.Pathfinding do
         paths =
           jump_move(
             board,
-            nil,
             start,
             finish,
             %{start => :done},
-            [start]
+            [{nil, start}]
           )
 
         backtrack(paths, finish, [])
@@ -62,16 +61,16 @@ defmodule Sternhalma.Pathfinding do
 
   @type jump_direction :: nil | Hex.direction()
 
-  @spec jump_move(Board.t(), jump_direction(), Cell.t(), Cell.t(), path_guide(), list(Cell.t())) ::
+  @spec jump_move(Board.t(), Cell.t(), Cell.t(), path_guide(), list({jump_direction(), Cell.t()})) ::
           path_guide()
-  defp jump_move(_board, _direction, _start, _finish, came_from, []), do: came_from
+  defp jump_move(_board, _start, _finish, came_from, []), do: came_from
 
-  defp jump_move(_board, _direction, _start, finish, came_from, [current | _cells])
+  defp jump_move(_board, _start, finish, came_from, [{_direction, current} | _cells])
        when finish.position == current.position do
     came_from
   end
 
-  defp jump_move(board, direction, start, finish, came_from, [current | cells]) do
+  defp jump_move(board, start, finish, came_from, [{direction, current} | cells]) do
     neighboring_cells =
       current
       |> neighbors(direction)
@@ -80,16 +79,18 @@ defmodule Sternhalma.Pathfinding do
       |> filter_occupied_cells(direction)
       |> remove_visited_cells(came_from)
 
-    direction = get_next_direction(neighboring_cells)
-
     next_cells =
       neighboring_cells
-      |> Enum.map(fn {_direction, cell} -> cell end)
       |> Kernel.++(cells)
 
-    came_from = update_came_from(came_from, current, next_cells)
+    came_from =
+      update_came_from(
+        came_from,
+        current,
+        Enum.map(next_cells, fn {_direction, cell} -> cell end)
+      )
 
-    jump_move(board, direction, start, finish, came_from, next_cells)
+    jump_move(board, start, finish, came_from, next_cells)
   end
 
   @spec update_came_from(path_guide(), Cell.t(), list(Cell.t())) :: path_guide()

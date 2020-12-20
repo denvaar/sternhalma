@@ -224,4 +224,36 @@ defmodule PathfindingTest do
 
     assert Pathfinding.path(board, start, finish) == []
   end
+
+  test "(11.7, 4) -> (10, 7) is valid", _state do
+    #
+    # o = empty cell
+    # x = cell with marble
+    # s = start
+    # f = finish
+    #             o
+    #            o o
+    #           o o o
+    #          o o o o
+    # o o o o o o o o o o o o o
+    #  o o o o o o o o o o o o
+    #   o o o o o o o o o o o
+    #    o o o o o o o o o o
+    #     o o o o o o o o o
+    #    o o o o o o o o o o
+    #   o o o o o o o o o o o
+    #  o o o o o o o o o o o o
+    # o o o o o o f o o o o o o
+    #          o o x x
+    #           o o s
+    #            o o
+    #             o
+    #
+
+    start = %Cell{marble: 'a', position: Hex.from_pixel({11.732, 4})}
+    finish = %Cell{position: Hex.from_pixel({10, 7})}
+    board = setup_board([{12.5, 5.5}, {10.866, 5.5}])
+
+    assert Pathfinding.path(board, start, finish) != []
+  end
 end

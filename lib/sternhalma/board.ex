@@ -10,7 +10,7 @@ defmodule Sternhalma.Board do
   @doc """
   Generate an empty board.
   """
-  @spec empty() :: list(Cell.t())
+  @spec empty() :: t()
   def empty() do
     six_point_star()
     |> Enum.map(&%Cell{position: &1})
@@ -207,4 +207,36 @@ defmodule Sternhalma.Board do
     |> Enum.zip()
     |> Enum.map(&Hex.new(&1))
   end
+
+  @doc """
+  Return the list of unique marbles found on a game board.
+  """
+  def unique_marbles(board) do
+    {_, marbles} =
+      Enum.reduce(board, {%{}, []}, fn cell, {memory, marbles} ->
+        if cell.marble != nil and Map.get(memory, cell.marble) == nil do
+          {Map.put(memory, cell.marble, true), [cell.marble | marbles]}
+        else
+          {memory, marbles}
+        end
+      end)
+
+    marbles
+  end
+
+  @spec count_marbles(t()) :: number()
+  def count_marbles(board) do
+    board
+    |> unique_marbles()
+    |> Enum.count()
+  end
+
+  @spec position_opponent(0..5) :: {:ok, home_triangle()} | {:error, nil}
+  def position_opponent(0), do: {:ok, :top}
+  def position_opponent(1), do: {:ok, :bottom}
+  def position_opponent(2), do: {:ok, :top_left}
+  def position_opponent(3), do: {:ok, :bottom_right}
+  def position_opponent(4), do: {:ok, :top_right}
+  def position_opponent(5), do: {:ok, :bottom_left}
+  def position_opponent(_), do: {:error, nil}
 end

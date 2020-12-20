@@ -2,225 +2,105 @@ defmodule Sternhalma do
   @moduledoc """
   """
 
-  use GenServer
+  alias Sternhalma.{Board, Cell, Hex}
 
-  alias Sternhalma.{Board, Cell, Pathfinding}
+  @doc """
+  Return {x, y} pixel coordinates for a given Hex coordinate.
 
-  @type game_status :: :setup | :playing | :over
+  ## Examples
 
-  @type game_state :: %{
-          game_id: binary(),
-          board: Board.t(),
-          turn: nil | String.t(),
-          last_move: list(Cell.t()),
-          status: game_status(),
-          players: list(String.t())
-        }
+      iex> to_pixel(Sternhalma.Hex.new({1, -4, 3}))
+      {8.267949192431123, 4.0}
 
-  def start_link(game_id) do
-    name = via_tuple(game_id)
-    GenServer.start_link(__MODULE__, game_id, name: name)
+
+  """
+  @spec to_pixel(Hex.t()) :: {number(), number()}
+  defdelegate to_pixel(position), to: Hex
+
+  @doc """
+  Return Hex coordinate for a given pixel coordinate {x, y}.
+
+  ## Examples
+
+      iex> from_pixel({8.267949192431123, 4.0})
+      %Sternhalma.Hex{x: 1, y: 3, z: -4}
+
+
+  """
+  @spec from_pixel({number(), number()}) :: Hex.t()
+  defdelegate from_pixel(position), to: Hex
+
+  @doc """
+  Move a marble from one cell on the board to another.
+  The function does not take into account if there is a
+  valid path between the two cells.
+  """
+  @spec move_marble(Board.t(), String.t(), Cell.t(), Cell.t()) :: Board.t()
+  def move_marble(board, marble, from, to) do
+    Enum.map(board, fn cell ->
+      cond do
+        cell.position == from.position ->
+          Cell.set_marble(cell, nil)
+
+        cell.position == to.position ->
+          Cell.set_marble(cell, marble)
+
+        true ->
+          cell
+      end
+    end)
   end
 
-  def add_player(game_id, player_name) do
-    GenServer.call(via_tuple(game_id), {:add_player, player_name})
-  end
+  @doc """
+  Generate an empty board.
+  """
+  @spec empty_board() :: Board.t()
+  defdelegate empty_board(), to: Board, as: :empty
 
-  def remove_player(game_id, player_name) do
-    GenServer.call(via_tuple(game_id), {:remove_player, player_name})
-  end
+  @doc """
+  Return a cell from the game board based on pixel coordinates, x and y.
+  Return nil if the cell does not exist.
 
-  def set_players(game_id, player_names) do
-    GenServer.call(via_tuple(game_id), {:set_players, player_names})
-  end
 
-  def play_game(game_id) do
-    GenServer.call(via_tuple(game_id), {:set_status, :playing})
-  end
+  ## Examples
 
-  def end_game(game_id) do
-    GenServer.call(via_tuple(game_id), {:set_status, :over})
-  end
+      iex> get_board_cell(empty_board(), {17.794, 14.5})
+      {:ok, %Sternhalma.Cell{marble: nil, position: %Sternhalma.Hex{x: 3, y: -6, z: 3}}}
 
-  def move_marble(game_id, start_position, end_position) do
-    GenServer.call(via_tuple(game_id), {:find_path, start_position, end_position})
-  end
+      iex> get_board_cell(empty_board(), {172.794, -104.5})
+      {:error, nil}
 
-  #
-  #  |             |
-  # \/ Server API \/
 
-  @impl true
-  def init(game_id) do
-    initial_state = %{
-      game_id: game_id,
-      board: Board.empty(),
-      status: :setup,
-      turn: nil,
-      last_move: [],
-      players: []
-    }
+  """
+  @spec get_board_cell(Board.t(), {number(), number()}) :: {:ok | :error, Cell.t() | nil}
+  defdelegate get_board_cell(board, position), to: Board
 
-    {:ok, initial_state}
-  end
+  @doc """
+  Add new marbles to the board.
 
-  @impl true
-  def handle_call({:add_player, player_name}, _from, state) do
-    new_state = add_player_impl(state, player_name)
+  The location of the marbles being added is determined based
+  on the number of unique marbles that are already on the board.
+  """
+  @spec setup_marbles(Board.t(), String.t()) :: {:ok, Board.t()} | {:error, :board_full}
+  def setup_marbles(board, marble) do
+    unique_existing_marble_count = Board.count_marbles(board)
 
-    {:reply, {:ok, new_state}, new_state}
-  end
-
-  def handle_call({:remove_player, player_name}, _from, state) do
-    game_state = %{
-      state
-      | players: [],
-        board: Board.empty()
-    }
-
-    # reset the game board and players to empty,
-    # then re-add new players (except the one to be removed)
-    new_state =
-      state.players
-      |> Enum.filter(&(&1 != player_name))
-      |> Enum.reduce(game_state, &add_player_impl(&2, &1))
-
-    {:reply, {:ok, new_state}, new_state}
-  end
-
-  def handle_call({:set_players, player_names}, _from, state) do
-    game_state = %{
-      state
-      | players: [],
-        board: Board.empty()
-    }
-
-    new_state =
-      player_names
-      |> Enum.reduce(game_state, &add_player_impl(&2, &1))
-
-    {:reply, {:ok, new_state}, new_state}
-  end
-
-  def handle_call({:find_path, start_position, end_position}, _from, state) do
-    %{turn: turn} = state
-
-    # TODO refactor this function
-    with(
-      {:ok, %Cell{marble: ^turn} = start_cell} <-
-        Board.get_board_cell(state.board, start_position),
-      {:ok, end_cell} <- Board.get_board_cell(state.board, end_position)
-    ) do
-      {result, path} = find_path(state.board, start_cell, end_cell)
-
-      board =
-        state.board
-        |> Enum.map(fn board_cell ->
-          cond do
-            board_cell.position == start_cell.position ->
-              Cell.set_marble(board_cell, nil)
-
-            board_cell.position == end_cell.position ->
-              Cell.set_marble(board_cell, state.turn)
-
-            true ->
-              board_cell
-          end
-        end)
-
-      new_state = %{
-        state
-        | board: board,
-          last_move: path,
-          turn: next_turn(state.players, state.turn)
-      }
-
-      {:reply, {result, new_state}, new_state}
+    with {:ok, triangle_location} <- Board.position_opponent(unique_existing_marble_count) do
+      {:ok,
+       Board.setup_triangle(
+         board,
+         triangle_location,
+         marble
+       )}
     else
-      _ ->
-        {:reply, {:error, "invalid start or end position"}, state}
+      {:error, _} ->
+        {:error, :board_full}
     end
   end
 
-  def handle_call({:set_status, status}, _from, state) do
-    {result, new_state} =
-      state
-      |> change_game_status(status)
-      |> perform_side_effects(status)
-
-    {:reply, {result, new_state}, new_state}
-  end
-
-  # TODO consider moving these private functions to some other module
-
-  @spec change_game_status(game_state(), game_status()) :: {:ok | :error, game_state()}
-  defp change_game_status(game_state, :playing)
-       when length(game_state.players) > 1 and game_state.status == :setup,
-       do: {:ok, %{game_state | status: :playing}}
-
-  defp change_game_status(game_state, :over) when game_state.status == :playing,
-    do: {:ok, %{game_state | status: :over}}
-
-  defp change_game_status(game_state, _), do: {:error, game_state}
-
-  @spec perform_side_effects({:ok | :error, game_state()}, game_status()) ::
-          {:ok | :error, game_state()}
-  defp perform_side_effects({:ok, game_state}, :playing) do
-    {:ok, %{game_state | turn: List.first(game_state.players)}}
-  end
-
-  defp perform_side_effects({:ok, game_state}, _), do: {:ok, game_state}
-  defp perform_side_effects({:error, game_state}, _), do: {:error, game_state}
-
-  @spec add_player_impl(game_state(), String.t()) :: game_state()
-  defp add_player_impl(game_state, player_name) do
-    number_of_existing_players = length(game_state.players)
-
-    %{
-      game_state
-      | players: [player_name | game_state.players],
-        board:
-          Board.setup_triangle(
-            game_state.board,
-            position_opponent(number_of_existing_players),
-            player_name
-          )
-    }
-  end
-
-  @spec position_opponent(0..5) :: Board.home_triangle()
-  defp position_opponent(0), do: :top
-  defp position_opponent(1), do: :bottom
-  defp position_opponent(2), do: :top_left
-  defp position_opponent(3), do: :bottom_right
-  defp position_opponent(4), do: :top_right
-  defp position_opponent(5), do: :bottom_left
-
-  @spec find_path(Board.t(), Cell.t(), Cell.t()) :: {:ok | :error, list(Cell.t())}
-  defp find_path(board, start_cell, end_cell) do
-    result_path = Pathfinding.path(board, start_cell, end_cell)
-    {pathfinding_status(result_path), result_path}
-  end
-
-  @spec pathfinding_status(list(Cell.t())) :: :ok | :error
-  defp pathfinding_status([]), do: :error
-  defp pathfinding_status(_path), do: :ok
-
-  @spec next_turn(list(String.t()), String.t()) :: String.t()
-  defp next_turn(players, turn) do
-    next_player_index =
-      case Enum.find_index(players, &(&1 == turn)) do
-        nil ->
-          0
-
-        current_player_index ->
-          rem(current_player_index + 1, length(players))
-      end
-
-    Enum.at(players, next_player_index)
-  end
-
-  defp via_tuple(game_id) do
-    {:via, Registry, {:sternhalma_registry, game_id}}
-  end
+  @doc """
+  Return the list of unique marbles found on a game board.
+  """
+  @spec unique_marbles(Board.t()) :: list(String.t())
+  defdelegate unique_marbles(board), to: Board
 end
