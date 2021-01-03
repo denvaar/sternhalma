@@ -29,105 +29,73 @@ defmodule Sternhalma.Board do
   """
   @spec setup_triangle(t(), home_triangle(), String.t()) :: t()
   def setup_triangle(board, :bottom, marble) do
-    positions = [
-      %Hex{x: 3, y: 3, z: -6},
-      %Hex{x: 2, y: 3, z: -5},
-      %Hex{x: 3, y: 2, z: -5},
-      %Hex{x: 1, y: 3, z: -4},
-      %Hex{x: 2, y: 2, z: -4},
-      %Hex{x: 3, y: 1, z: -4},
-      %Hex{x: 0, y: 3, z: -3},
-      %Hex{x: 1, y: 2, z: -3},
-      %Hex{x: 2, y: 1, z: -3},
-      %Hex{x: 3, y: 0, z: -3}
-    ]
-
-    setup_triangle_helper(board, positions, marble)
+    board
+    |> setup_triangle_helper(bottom_positions(), fn cell ->
+      Cell.set_marble(cell, marble)
+    end)
+    |> setup_triangle_helper(top_positions(), fn cell ->
+      Cell.set_target(cell, marble)
+    end)
   end
 
   def setup_triangle(board, :bottom_left, marble) do
-    positions = [
-      %Hex{x: -5, y: 7, z: -2},
-      %Hex{x: -5, y: 6, z: -1},
-      %Hex{x: -4, y: 6, z: -2},
-      %Hex{x: -5, y: 5, z: 0},
-      %Hex{x: -4, y: 5, z: -1},
-      %Hex{x: -3, y: 5, z: -2},
-      %Hex{x: -5, y: 4, z: 1},
-      %Hex{x: -4, y: 4, z: 0},
-      %Hex{x: -3, y: 4, z: -1},
-      %Hex{x: -2, y: 4, z: -2}
-    ]
-
-    setup_triangle_helper(board, positions, marble)
+    board
+    |> setup_triangle_helper(bottom_left_positions(), fn cell ->
+      Cell.set_marble(cell, marble)
+    end)
+    |> setup_triangle_helper(top_right_positions(), fn cell ->
+      Cell.set_target(cell, marble)
+    end)
   end
 
   def setup_triangle(board, :top_left, marble) do
-    positions = [
-      %Hex{x: -9, y: 3, z: 6},
-      %Hex{x: -8, y: 2, z: 6},
-      %Hex{x: -8, y: 3, z: 5},
-      %Hex{x: -7, y: 1, z: 6},
-      %Hex{x: -7, y: 2, z: 5},
-      %Hex{x: -7, y: 3, z: 4},
-      %Hex{x: -6, y: 0, z: 6},
-      %Hex{x: -6, y: 1, z: 5},
-      %Hex{x: -6, y: 2, z: 4},
-      %Hex{x: -6, y: 3, z: 3}
-    ]
-
-    setup_triangle_helper(board, positions, marble)
+    board
+    |> setup_triangle_helper(top_left_positions(), fn cell ->
+      Cell.set_marble(cell, marble)
+    end)
+    |> setup_triangle_helper(bottom_right_positions(), fn cell ->
+      Cell.set_target(cell, marble)
+    end)
   end
 
   def setup_triangle(board, :top, marble) do
-    positions = [
-      %Hex{x: -5, y: -5, z: 10},
-      %Hex{x: -5, y: -4, z: 9},
-      %Hex{x: -4, y: -5, z: 9},
-      %Hex{x: -5, y: -3, z: 8},
-      %Hex{x: -4, y: -4, z: 8},
-      %Hex{x: -3, y: -5, z: 8},
-      %Hex{x: -5, y: -2, z: 7},
-      %Hex{x: -4, y: -3, z: 7},
-      %Hex{x: -3, y: -4, z: 7},
-      %Hex{x: -2, y: -5, z: 7}
-    ]
-
-    setup_triangle_helper(board, positions, marble)
+    board
+    |> setup_triangle_helper(top_positions(), fn cell ->
+      Cell.set_marble(cell, marble)
+    end)
+    |> setup_triangle_helper(bottom_positions(), fn cell ->
+      Cell.set_target(cell, marble)
+    end)
   end
 
   def setup_triangle(board, :top_right, marble) do
-    positions = [
-      %Hex{x: 3, y: -9, z: 6},
-      %Hex{x: 2, y: -8, z: 6},
-      %Hex{x: 3, y: -8, z: 5},
-      %Hex{x: 1, y: -7, z: 6},
-      %Hex{x: 2, y: -7, z: 5},
-      %Hex{x: 3, y: -7, z: 4},
-      %Hex{x: 0, y: -6, z: 6},
-      %Hex{x: 1, y: -6, z: 5},
-      %Hex{x: 2, y: -6, z: 4},
-      %Hex{x: 3, y: -6, z: 3}
-    ]
-
-    setup_triangle_helper(board, positions, marble)
+    board
+    |> setup_triangle_helper(top_right_positions(), fn cell ->
+      Cell.set_marble(cell, marble)
+    end)
+    |> setup_triangle_helper(bottom_left_positions(), fn cell ->
+      Cell.set_target(cell, marble)
+    end)
   end
 
   def setup_triangle(board, :bottom_right, marble) do
-    positions = [
-      %Hex{x: 7, y: -5, z: -2},
-      %Hex{x: 6, y: -5, z: -1},
-      %Hex{x: 6, y: -4, z: -2},
-      %Hex{x: 5, y: -5, z: 0},
-      %Hex{x: 5, y: -4, z: -1},
-      %Hex{x: 5, y: -3, z: -2},
-      %Hex{x: 4, y: -5, z: 1},
-      %Hex{x: 4, y: -4, z: 0},
-      %Hex{x: 4, y: -3, z: -1},
-      %Hex{x: 4, y: -2, z: -2}
-    ]
+    board
+    |> setup_triangle_helper(bottom_right_positions(), fn cell ->
+      Cell.set_marble(cell, marble)
+    end)
+    |> setup_triangle_helper(top_left_positions(), fn cell ->
+      Cell.set_target(cell, marble)
+    end)
+  end
 
-    setup_triangle_helper(board, positions, marble)
+  def find_winners(board) do
+    board
+    |> Enum.filter(fn cell ->
+      cell.target == cell.marble and cell.marble != nil
+    end)
+    |> Enum.group_by(& &1.marble)
+    |> Map.values()
+    |> Enum.filter(&(Enum.count(&1) == 10))
   end
 
   @doc """
@@ -155,14 +123,15 @@ defmodule Sternhalma.Board do
     end
   end
 
-  @spec setup_triangle_helper(t(), list(Hex.t()), String.t()) :: t()
-  defp setup_triangle_helper(board, target_positions, marble) do
+  @spec setup_triangle_helper(t(), list(Hex.t()), (Cell.t() -> Cell.t())) :: t()
+  defp setup_triangle_helper(board, target_positions, func) do
     board
     |> Enum.map(fn cell ->
       if Enum.any?(target_positions, fn position ->
            position == cell.position
          end) do
-        %Cell{marble: marble, position: cell.position}
+        func.(cell)
+        # Cell.set_marble(cell, marble)
       else
         cell
       end
@@ -239,4 +208,88 @@ defmodule Sternhalma.Board do
   def position_opponent(4), do: {:ok, :top_right}
   def position_opponent(5), do: {:ok, :bottom_left}
   def position_opponent(_), do: {:error, nil}
+
+  defp bottom_positions(),
+    do: [
+      %Hex{x: 3, y: 3, z: -6},
+      %Hex{x: 2, y: 3, z: -5},
+      %Hex{x: 3, y: 2, z: -5},
+      %Hex{x: 1, y: 3, z: -4},
+      %Hex{x: 2, y: 2, z: -4},
+      %Hex{x: 3, y: 1, z: -4},
+      %Hex{x: 0, y: 3, z: -3},
+      %Hex{x: 1, y: 2, z: -3},
+      %Hex{x: 2, y: 1, z: -3},
+      %Hex{x: 3, y: 0, z: -3}
+    ]
+
+  defp top_positions(),
+    do: [
+      %Hex{x: -5, y: -5, z: 10},
+      %Hex{x: -5, y: -4, z: 9},
+      %Hex{x: -4, y: -5, z: 9},
+      %Hex{x: -5, y: -3, z: 8},
+      %Hex{x: -4, y: -4, z: 8},
+      %Hex{x: -3, y: -5, z: 8},
+      %Hex{x: -5, y: -2, z: 7},
+      %Hex{x: -4, y: -3, z: 7},
+      %Hex{x: -3, y: -4, z: 7},
+      %Hex{x: -2, y: -5, z: 7}
+    ]
+
+  def bottom_left_positions(),
+    do: [
+      %Hex{x: -5, y: 7, z: -2},
+      %Hex{x: -5, y: 6, z: -1},
+      %Hex{x: -4, y: 6, z: -2},
+      %Hex{x: -5, y: 5, z: 0},
+      %Hex{x: -4, y: 5, z: -1},
+      %Hex{x: -3, y: 5, z: -2},
+      %Hex{x: -5, y: 4, z: 1},
+      %Hex{x: -4, y: 4, z: 0},
+      %Hex{x: -3, y: 4, z: -1},
+      %Hex{x: -2, y: 4, z: -2}
+    ]
+
+  def top_right_positions(),
+    do: [
+      %Hex{x: 3, y: -9, z: 6},
+      %Hex{x: 2, y: -8, z: 6},
+      %Hex{x: 3, y: -8, z: 5},
+      %Hex{x: 1, y: -7, z: 6},
+      %Hex{x: 2, y: -7, z: 5},
+      %Hex{x: 3, y: -7, z: 4},
+      %Hex{x: 0, y: -6, z: 6},
+      %Hex{x: 1, y: -6, z: 5},
+      %Hex{x: 2, y: -6, z: 4},
+      %Hex{x: 3, y: -6, z: 3}
+    ]
+
+  def top_left_positions(),
+    do: [
+      %Hex{x: -9, y: 3, z: 6},
+      %Hex{x: -8, y: 2, z: 6},
+      %Hex{x: -8, y: 3, z: 5},
+      %Hex{x: -7, y: 1, z: 6},
+      %Hex{x: -7, y: 2, z: 5},
+      %Hex{x: -7, y: 3, z: 4},
+      %Hex{x: -6, y: 0, z: 6},
+      %Hex{x: -6, y: 1, z: 5},
+      %Hex{x: -6, y: 2, z: 4},
+      %Hex{x: -6, y: 3, z: 3}
+    ]
+
+  def bottom_right_positions(),
+    do: [
+      %Hex{x: 7, y: -5, z: -2},
+      %Hex{x: 6, y: -5, z: -1},
+      %Hex{x: 6, y: -4, z: -2},
+      %Hex{x: 5, y: -5, z: 0},
+      %Hex{x: 5, y: -4, z: -1},
+      %Hex{x: 5, y: -3, z: -2},
+      %Hex{x: 4, y: -5, z: 1},
+      %Hex{x: 4, y: -4, z: 0},
+      %Hex{x: 4, y: -3, z: -1},
+      %Hex{x: 4, y: -2, z: -2}
+    ]
 end

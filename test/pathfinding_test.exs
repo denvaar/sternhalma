@@ -256,4 +256,49 @@ defmodule PathfindingTest do
 
     assert Pathfinding.path(board, start, finish) != []
   end
+
+  test "does not get stuck when there is a circular dependency", _state do
+    #
+    # o = empty cell
+    # x = cell with marble
+    # s = start
+    # f = finish
+    #             o
+    #            o o
+    #           o o o
+    #          o o o o
+    # o o o o o o o o o o o o o
+    #  o o o o o o o o o o o o
+    #   o o o o o o o o o o o
+    #    o o s x o o o o f o
+    #     o o o x x x x x o
+    #    o o o o x o o o o o
+    #   o o o o x x o o o o o
+    #  o o o o o o o o o o o o
+    # o o o o o o o o o o o o o
+    #          o o o o
+    #           o o o
+    #            o o
+    #             o
+    #
+
+    start = %Cell{marble: 'a', position: Hex.from_pixel({5.67, 14.5})}
+    finish = %Cell{position: Hex.from_pixel({16.062, 14.5})}
+
+    board =
+      setup_board([
+        {7.402, 14.5},
+        {8.268, 13},
+        {10, 13},
+        {11.732, 13},
+        {13.464, 13},
+        {15.196, 13},
+        {9.134, 11.5},
+        {10, 10},
+        {8.268, 10}
+      ])
+
+    path = Pathfinding.path(board, start, finish)
+    assert path != []
+  end
 end

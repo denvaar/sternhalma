@@ -81,6 +81,7 @@ defmodule Sternhalma.Pathfinding do
 
     next_cells =
       neighboring_cells
+      |> Enum.filter(fn {_, c} -> Enum.find(cells, fn {_, cc} -> cc == c end) == nil end)
       |> Kernel.++(cells)
 
     came_from =
@@ -101,10 +102,6 @@ defmodule Sternhalma.Pathfinding do
       _ -> came_from
     end
   end
-
-  @spec get_next_direction(list({jump_direction(), Cell.t()})) :: jump_direction()
-  defp get_next_direction([]), do: nil
-  defp get_next_direction([{direction, _cell} | _]), do: direction
 
   @spec convert_hex_positions_to_cells(list({jump_direction(), Hex.t()}), Board.t()) ::
           list({jump_direction(), Cell.t()})
