@@ -2,7 +2,7 @@ defmodule Sternhalma do
   @moduledoc """
   """
 
-  alias Sternhalma.{Board, Cell, Hex}
+  alias Sternhalma.{Board, Cell, Pathfinding, Hex}
 
   @doc """
   Return {x, y} pixel coordinates for a given Hex coordinate.
@@ -49,6 +49,15 @@ defmodule Sternhalma do
           cell
       end
     end)
+  end
+
+  @doc """
+  Return a list of board cells from one position to another.
+  Returns an empty list if there is no path possible.
+  """
+  @spec find_path(Board.t(), Cell.t(), Cell.t()) :: list(Cell.t())
+  def find_path(board, from, to) do
+    Pathfinding.path(board, from, to)
   end
 
   @doc """
@@ -103,4 +112,29 @@ defmodule Sternhalma do
   """
   @spec unique_marbles(Board.t()) :: list(String.t())
   defdelegate unique_marbles(board), to: Board
+
+  @doc """
+  Indicates if all the marbles of the given type are located
+  in their winning locations.
+  """
+  @spec won_game?(Board.t(), String.t()) :: boolean()
+  def won_game?(board, marble) do
+    Board.find_winners(board)
+    |> Enum.any?(&(&1.marble == marble))
+  end
+
+  @doc """
+  Returns the winner, if there is one.
+  To win, all 10 marbles must be in their
+  target positions.
+  """
+  @spec winner(Board.t()) :: String.t() | nil
+  def winner(board) do
+    with [[winner | _] | _] <- Board.find_winners(board) do
+      winner.marble
+    else
+      _ ->
+        nil
+    end
+  end
 end
