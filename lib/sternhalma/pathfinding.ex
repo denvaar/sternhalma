@@ -25,7 +25,8 @@ defmodule Sternhalma.Pathfinding do
         [start, finish]
 
       true ->
-        path = bfs(board, finish, %{}, %{}, :done, [start])
+        path = bfs(board, finish, %{start => :done}, %{start => true}, :done, [start])
+        IO.inspect(path)
         backtrack(path, finish, [])
     end
   end
@@ -50,20 +51,21 @@ defmodule Sternhalma.Pathfinding do
   defp bfs(_board, _target, path, _visited, _parent, []), do: path
 
   defp bfs(board, target, path, visited, parent, [current | to_be_explored]) do
-    path =
-      if Map.get(visited, current.position) == nil do
-        Map.put(path, current, parent)
-      else
-        path
-      end
-
-    visited = Map.put(visited, current.position, true)
-
     neighbor_cells =
       current.position
       |> jumpable_neighbors(board)
       |> remove_invalid_cells(board)
       |> remove_visited_cells(visited)
+
+    path =
+      Enum.reduce(neighbor_cells, path, fn cell, path_acc ->
+        Map.put(path_acc, cell, current)
+      end)
+
+    visited =
+      Enum.reduce(neighbor_cells, visited, fn cell, visited_acc ->
+        Map.put(visited_acc, cell.position, true)
+      end)
 
     bfs(board, target, path, visited, current, to_be_explored ++ neighbor_cells)
   end
@@ -102,12 +104,13 @@ defmodule Sternhalma.Pathfinding do
   end
 
   # @spec backtrack(path_guide(), next_location(), list(Cell.t())) :: list(Cell.t())
-  defp backtrack(_paths, nil, _path), do: []
-  defp backtrack(_paths, :done, path), do: path
+  defp backtrack(_path, nil, _result), do: []
+  defp backtrack(_path, :done, result), do: result
 
-  defp backtrack(paths, finish, path) do
-    current = Map.get(paths, finish)
-    backtrack(paths, current, [finish | path])
+  defp backtrack(path, finish, result) do
+    current = Map.get(path, finish)
+    # IO.inspect(current)
+    backtrack(path, current, [finish | result])
   end
 
   # TODO: might not need this
