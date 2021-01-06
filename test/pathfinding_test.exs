@@ -302,6 +302,7 @@ defmodule PathfindingTest do
            ]
   end
 
+  @tag timeout: :infinity
   test "does not get stuck when there is a circular dependency", _state do
     #
     # o = empty cell
