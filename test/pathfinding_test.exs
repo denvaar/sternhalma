@@ -21,6 +21,47 @@ defmodule PathfindingTest do
     end)
   end
 
+  test "finds jumpable neighbors" do
+    #
+    # o = empty cell
+    # x = cell with marble
+    # s = start
+    # f = finish
+    #             o
+    #            o o
+    #           o o o
+    #          o o o o
+    # o o o o o o o o o o o o o
+    #  o o o o o o o o o o o o
+    #   o o o o o o o o o o o
+    #    o o o x o o o o o o
+    #     o x x s x o o o o
+    #    o o o o o o o o o o
+    #   o o o o o o o o o o o
+    #  o o o o o o o o o o o o
+    # o o o o o o o o o o o o o
+    #          o o o o
+    #           o o o
+    #            o o
+    #             o
+    #
+
+    start = %Cell{marble: 'a', position: Hex.from_pixel({8.268, 13})}
+
+    board =
+      setup_board([
+        {10, 13},
+        {6.536, 13},
+        {4.804, 13},
+        {7.402, 14.5}
+      ])
+
+    assert Pathfinding.jumpable_neighbors(start.position, board) == [
+             %Cell{marble: nil, position: Hex.from_pixel({6.536, 16})},
+             %Cell{marble: nil, position: Hex.from_pixel({11.732, 13})}
+           ]
+  end
+
   test "finds path to a neighboring cell" do
     #
     # o = empty cell
@@ -254,7 +295,11 @@ defmodule PathfindingTest do
     finish = %Cell{position: Hex.from_pixel({10, 7})}
     board = setup_board([{12.5, 5.5}, {10.866, 5.5}])
 
-    assert Pathfinding.path(board, start, finish) != []
+    assert Pathfinding.path(board, start, finish) == [
+             start,
+             %Cell{marble: 'a', position: Hex.from_pixel({10.866, 5.5})},
+             finish
+           ]
   end
 
   test "does not get stuck when there is a circular dependency", _state do
@@ -299,6 +344,15 @@ defmodule PathfindingTest do
       ])
 
     path = Pathfinding.path(board, start, finish)
-    assert path != []
+    IO.inspect(Enum.map(path, fn c -> Sternhalma.to_pixel(c.position) end))
+
+    assert path == [
+             start,
+             %Cell{marble: nil, position: Hex.from_pixel({9.134, 14.5})},
+             %Cell{marble: nil, position: Hex.from_pixel({10.866, 11.5})},
+             %Cell{marble: nil, position: Hex.from_pixel({12.598, 14.5})},
+             %Cell{marble: nil, position: Hex.from_pixel({14.33, 11.5})},
+             finish
+           ]
   end
 end
