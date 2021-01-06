@@ -151,11 +151,8 @@ defmodule PathfindingTest do
 
     assert Pathfinding.path(board, start, finish) == [
              start,
-             %Cell{marble: 'a', position: Hex.from_pixel({9.134, 2.5})},
              %Cell{position: Hex.from_pixel({8.268, 4})},
-             %Cell{marble: 'a', position: Hex.from_pixel({7.402, 5.5})},
              %Cell{position: Hex.from_pixel({6.536, 7})},
-             %Cell{marble: 'a', position: Hex.from_pixel({5.67, 8.5})},
              finish
            ]
   end
@@ -191,13 +188,9 @@ defmodule PathfindingTest do
 
     assert Pathfinding.path(board, start, finish) == [
              start,
-             %Cell{marble: 'a', position: Hex.from_pixel({9.134, 2.5})},
              %Cell{position: Hex.from_pixel({8.268, 4})},
-             %Cell{marble: 'a', position: Hex.from_pixel({10, 4})},
              %Cell{position: Hex.from_pixel({11.732, 4})},
-             %Cell{marble: 'a', position: Hex.from_pixel({12.598, 5.5})},
              %Cell{position: Hex.from_pixel({13.464, 7})},
-             %Cell{marble: 'a', position: Hex.from_pixel({11.732, 7})},
              finish
            ]
   end
@@ -297,12 +290,10 @@ defmodule PathfindingTest do
 
     assert Pathfinding.path(board, start, finish) == [
              start,
-             %Cell{marble: 'a', position: Hex.from_pixel({10.866, 5.5})},
              finish
            ]
   end
 
-  @tag timeout: :infinity
   test "does not get stuck when there is a circular dependency", _state do
     #
     # o = empty cell
@@ -345,7 +336,6 @@ defmodule PathfindingTest do
       ])
 
     path = Pathfinding.path(board, start, finish)
-    IO.inspect(Enum.map(path, fn c -> Sternhalma.to_pixel(c.position) end))
 
     assert path == [
              start,

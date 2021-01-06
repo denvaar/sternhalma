@@ -1,18 +1,32 @@
 defmodule Sternhalma.Pathfinding do
   @moduledoc """
-  Provides functions to find paths between positions on the Chinese Checkers game board.
+  Provides functions for pathfinding in the context of a game board.
 
-  A path is found if either:
-    - The finishing spot is empty and is a direct neighbor of the starting spot.
-    - The finishing spot is empty and is reachable via one or more "jump" moves.
+  Pathfinding comes into play when determining if a proposed move is valid.
 
+  A path is considered valid if:
+
+    - The finishing cell is empty and a direct neighbor of the starting cell
+    - The finishing cell is empty and is reachable via one or more "jump" moves
+
+  A jump is only possible if there's a marble in between the current cell and
+  an empty cell.
+
+  Marbles can be jumped any number of times, as long as the direction of the jump
+  doesn't change while not on an empty cell. It is valid to change directions
+  once an empty cell is reached.
   """
 
   alias Sternhalma.{Hex, Cell, Board}
 
   @doc """
-  Return a list of cells from start to finish.
-  Returns an empty list if there is no path.
+  Find and return a list of cells between the given
+  start and finish cells.
+
+  If there is not a valid path between the two, an empty
+  list is returned.
+
+  The shortest path possible is returned.
   """
   @spec path(Board.t(), Cell.t(), Cell.t()) :: list(Cell.t())
   def path(_board, start, finish)
@@ -25,8 +39,7 @@ defmodule Sternhalma.Pathfinding do
         [start, finish]
 
       true ->
-        path = bfs(board, finish, %{start => :done}, %{start => true}, :done, [start])
-        IO.inspect(path)
+        path = bfs(board, finish, %{start => :done}, %{start => true}, [start])
         backtrack(path, finish, [])
     end
   end
@@ -34,57 +47,38 @@ defmodule Sternhalma.Pathfinding do
   @type path :: %{Cell.t() => :done | Cell.t()}
   @type visited :: %{Hex.t() => true}
 
-  @doc """
-  Find the shorted path to the provided target
-  cell, if exists.
-
-  The general algorithm is
-  Breadth First Search. First dequeue a cell
-  for exploration, next enqueue neighbors and
-  repeat.
-  """
-  @spec bfs(Board.t(), Cell.t(), path(), visited(), Cell.t() | :done, list(Cell.t())) :: path()
-  defp bfs(_board, target, path, _visited, parent, [current | _to_be_explored])
+  @spec bfs(Board.t(), Cell.t(), path(), visited(), list(Cell.t())) :: path()
+  defp bfs(_board, target, path, _visited, [current | _to_be_explored])
        when current.position == target.position,
-       do: Map.put(path, current, parent)
+       do: path
 
-  defp bfs(_board, _target, path, _visited, _parent, []), do: path
+  defp bfs(_board, _target, path, _visited, []), do: path
 
-  defp bfs(board, target, path, visited, parent, [current | to_be_explored]) do
-    neighbor_cells =
+  defp bfs(board, target, path, visited, [current | to_be_explored]) do
+    neighbors =
       current.position
       |> jumpable_neighbors(board)
-      |> remove_invalid_cells(board)
       |> remove_visited_cells(visited)
 
     path =
-      Enum.reduce(neighbor_cells, path, fn cell, path_acc ->
-        Map.put(path_acc, cell, current)
+      Enum.reduce(neighbors, path, fn neighbor, path_acc ->
+        Map.put(path_acc, neighbor, current)
       end)
 
     visited =
-      Enum.reduce(neighbor_cells, visited, fn cell, visited_acc ->
-        Map.put(visited_acc, cell.position, true)
+      Enum.reduce(neighbors, visited, fn neighbor, visited_acc ->
+        Map.put(visited_acc, neighbor.position, true)
       end)
 
-    bfs(board, target, path, visited, current, to_be_explored ++ neighbor_cells)
+    bfs(board, target, path, visited, to_be_explored ++ neighbors)
   end
 
   @doc """
-  Return all the neighbors from a given position
-  on a board. It's different from Hex.neighbors
-  because this counts neighbors as either:
-
-  - Empty cells directly next to the given position
-  - Empty cells that are one jump away from the given
-    position from a single direction
-
-  This function is helpful because from this module's
-  perspective the only neighbors that are important
-  are those that are reachable.
+  Return the cells that are reachable one jump move
+  away from the given position.
 
   See Hex.neighbors/1 or Hex.neighbor/2 for finding
-  neighbors without these rules.
+  neighbors in general.
   """
   @spec jumpable_neighbors(Hex.t(), Board.t()) :: list(Cell.t())
   def jumpable_neighbors(position, board) do
@@ -103,24 +97,13 @@ defmodule Sternhalma.Pathfinding do
     |> Enum.filter(& &1)
   end
 
-  # @spec backtrack(path_guide(), next_location(), list(Cell.t())) :: list(Cell.t())
+  @spec backtrack(path(), nil | Cell.t() | :done, list(Cell.t())) :: list(Cell.t())
   defp backtrack(_path, nil, _result), do: []
   defp backtrack(_path, :done, result), do: result
 
   defp backtrack(path, finish, result) do
     current = Map.get(path, finish)
-    # IO.inspect(current)
     backtrack(path, current, [finish | result])
-  end
-
-  # TODO: might not need this
-
-  @spec remove_invalid_cells(list(Cell.t()), Board.t()) :: list(Cell.t())
-  defp remove_invalid_cells(neighbors, board) do
-    neighbors
-    |> Enum.filter(fn neighbor_cell ->
-      Enum.any?(board, fn cell -> neighbor_cell.position == cell.position end)
-    end)
   end
 
   @spec remove_visited_cells(list(Cell.t()), visited()) :: list(Cell.t())
