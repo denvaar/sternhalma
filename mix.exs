@@ -8,7 +8,8 @@ defmodule Sternhalma.MixProject do
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      package: package()
+      package: package(),
+      source_url: "https://github.com/denvaar/sternhalma"
     ]
   end
 
@@ -19,7 +20,7 @@ defmodule Sternhalma.MixProject do
       Provides a set of functions for making a Chinese Checkers game.
       """,
       licenses: ["mit"],
-      source_url: "https://github.com/denvaar/sternhalma"
+      links: %{"GitHub" => "https://github.com/denvaar/sternhalma"}
     ]
   end
 
