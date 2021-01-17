@@ -1,6 +1,8 @@
 defmodule Sternhalma.MixProject do
   use Mix.Project
 
+  @source_url "https://github.com/denvaar/sternhalma"
+
   def project() do
     [
       app: :sternhalma,
@@ -9,26 +11,25 @@ defmodule Sternhalma.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       package: package(),
-      source_url: "https://github.com/denvaar/sternhalma"
+      source_url: @source_url,
+      description: """
+      Provides a set of functions for making a Chinese Checkers game.
+      """,
+      name: "Sternhalma"
     ]
   end
 
   defp package() do
     [
-      name: "Sternhalma",
-      description: """
-      Provides a set of functions for making a Chinese Checkers game.
-      """,
-      licenses: ["mit"],
-      links: %{"GitHub" => "https://github.com/denvaar/sternhalma"}
+      licenses: ["MIT"],
+      links: %{"GitHub" => @source_url}
     ]
   end
 
   # Run "mix help compile.app" to learn about applications.
   def application() do
     [
-      extra_applications: [:logger],
-      mod: {Sternhalma.Application, []}
+      extra_applications: [:logger]
     ]
   end
 
