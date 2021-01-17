@@ -1,6 +1,6 @@
 # Sternhalma
 
-**TODO: Add description**
+Provides a set of functions for building a Chinese Checkers game.
 
 ## Installation
 
