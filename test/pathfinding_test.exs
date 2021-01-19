@@ -1,5 +1,5 @@
 defmodule PathfindingTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   doctest Sternhalma.Pathfinding, import: true
 
   alias Sternhalma.{
